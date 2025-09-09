@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~* CHAT ZONE *~</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: #f5f5dc;
+            background-image: 
+                radial-gradient(circle at 20px 50px, #000 2px, transparent 2px),
+                radial-gradient(circle at 40px 80px, #000 1px, transparent 1px);
+            background-size: 60px 100px;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 3px solid #000000;
+            box-shadow: 5px 5px 0px #808080;
+        }
+        
+        .header {
+            background: #c0c0c0;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before,
+        .header::after {
+            content: "♦";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+        
+        .header::before { left: 20px; }
+        .header::after { right: 20px; }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.7; }
+        }
+        
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #ffffff;
+            border-bottom: 2px solid #000;
+            font-size: 14px;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-left: 3px solid #808080;
+            padding-left: 10px;
+        }
+        
+        .message.system {
+            border-left-color: #ff6b6b;
+            background: #fff0f0;
+            font-style: italic;
+        }
+        
+        .message.user {
+            border-left-color: #4ecdc4;
+            background: #f0ffff;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .username {
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .input-area {
+            padding: 15px;
+            background: #f0f0f0;
+            border-top: 1px inset #808080;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        #usernameInput {
+            flex: 1;
+            padding: 8px;
+            border: 2px inset #c0c0c0;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        #messageInput {
+            flex: 3;
+            padding: 8px;
+            border: 2px inset #c0c0c0;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        #sendButton {
+            padding: 8px 20px;
+            background: #c0c0c0;
+            border: 2px outset #c0c0c0;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        #sendButton:hover:not(:disabled) {
+            background: #d0d0d0;
+        }
+        
+        #sendButton:active:not(:disabled) {
+            border: 2px inset #c0c0c0;
+        }
+        
+        #sendButton:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .status {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .cooldown {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .online-count {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #000;
+            color: #00ff00;
+            padding: 2px 6px;
+            font-size: 12px;
+            border: 1px solid #00ff00;
+        }
+        
+        /* Webcore scrollbar */
+        .chat-area::-webkit-scrollbar {
+            width: 16px;
+        }
+        
+        .chat-area::-webkit-scrollbar-track {
+            background: #c0c0c0;
+            border: 1px inset #c0c0c0;
+        }
+        
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #808080;
+            border: 1px outset #808080;
+        }
+        
+        .chat-area::-webkit-scrollbar-thumb:hover {
+            background: #606060;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="online-count">ONLINE: <span id="onlineCount">1</span></div>
+            <h1>~* CHAT ZONE *~</h1>
+        </div>
+        
+        <div class="chat-area" id="chatArea">
+            <div class="message system">
+                <span class="timestamp">[00:00:00]</span> 
+                <span class="username">SYSTEM:</span> 
+                Welcome to the chat zone! Enter your name and start chatting...
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" id="usernameInput" placeholder="Enter username..." maxlength="20">
+                <input type="text" id="messageInput" placeholder="Type your message..." maxlength="200" disabled>
+                <button id="sendButton" disabled>SEND</button>
+            </div>
+            <div class="status" id="statusText">Enter a username (max 3 characters)</div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+    
+    <script>
+        // Firebase configuration - You'll need to replace this with your own config
+        const firebaseConfig = {
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            databaseURL: "https://your-project-default-rtdb.firebaseio.com/",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+        
+        // Initialize Firebase (with fallback for demo)
+        let db = null;
+        let isFirebaseConnected = false;
+        
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            isFirebaseConnected = true;
+            console.log("Firebase connected!");
+        } catch (error) {
+            console.log("Firebase connection failed, running in demo mode:", error);
+        }
+        
+        let messages = [];
+        let username = '';
+        let lastMessageTime = 0;
+        let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        const COOLDOWN_TIME = 3000; // 3 seconds
+        
+        const chatArea = document.getElementById('chatArea');
+        const messageInput = document.getElementById('messageInput');
+        const usernameInput = document.getElementById('usernameInput');
+        const sendButton = document.getElementById('sendButton');
+        const statusText = document.getElementById('statusText');
+        const onlineCount = document.getElementById('onlineCount');
+        
+        // Online user tracking
+        let onlineUsers = new Set();
+        
+        function formatTime(timestamp = null) {
+            const date = timestamp ? new Date(timestamp) : new Date();
+            return date.toTimeString().split(' ')[0];
+        }
+        
+        function sanitizeText(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function addMessageToDOM(msg, type = 'user') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.dataset.messageId = msg.id || Date.now();
+            
+            const timestamp = formatTime(msg.timestamp);
+            const safeUsername = sanitizeText(msg.username);
+            const safeText = sanitizeText(msg.text);
+            
+            messageDiv.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span> 
+                <span class="username">${safeUsername}:</span> 
+                ${safeText}
+            `;
+            
+            // Check if message already exists
+            const existingMsg = chatArea.querySelector(`[data-message-id="${msg.id || Date.now()}"]`);
+            if (!existingMsg) {
+                chatArea.appendChild(messageDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+        }
+        
+        function sendMessageToFirebase(messageData) {
+            if (!isFirebaseConnected) {
+                // Demo mode - just add locally
+                addMessageToDOM(messageData);
+                return;
+            }
+            
+            try {
+                const messagesRef = db.ref('chatroom/messages');
+                const newMessageRef = messagesRef.push();
+                newMessageRef.set({
+                    ...messageData,
+                    id: newMessageRef.key
+                });
+            } catch (error) {
+                console.error("Error sending message:", error);
+                statusText.innerHTML = '<span class="cooldown">Error sending message</span>';
+            }
+        }
+        
+        function updateOnlineStatus() {
+            if (!isFirebaseConnected || !username) return;
+            
+            try {
+                const userRef = db.ref(`chatroom/users/${userId}`);
+                userRef.set({
+                    username: username,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP,
+                    status: 'online'
+                });
+                
+                // Remove user when they disconnect
+                userRef.onDisconnect().remove();
+            } catch (error) {
+                console.error("Error updating online status:", error);
+            }
+        }
+        
+        function listenForMessages() {
+            if (!isFirebaseConnected) {
+                // Demo mode - add some fake messages
+                setTimeout(() => {
+                    addMessageToDOM({
+                        username: 'WebMaster',
+                        text: 'Server status: ONLINE ░░░░░░░░░░ 100%',
+                        timestamp: Date.now(),
+                        id: 'demo_1'
+                    }, 'system');
+                }, 2000);
+                
+                setTimeout(() => {
+                    addMessageToDOM({
+                        username: 'Guest_1337',
+                        text: 'anyone else remember the old days of the web?',
+                        timestamp: Date.now(),
+                        id: 'demo_2'
+                    });
+                }, 5000);
+                
+                setTimeout(() => {
+                    addMessageToDOM({
+                        username: 'retrowave_kid',
+                        text: 'yeah! this takes me back to \'95',
+                        timestamp: Date.now(),
+                        id: 'demo_3'
+                    });
+                }, 8000);
+                
+                // Simulate online users
+                let simulatedCount = Math.floor(Math.random() * 50) + 10;
+                onlineCount.textContent = simulatedCount;
+                
+                setInterval(() => {
+                    simulatedCount += Math.floor(Math.random() * 5) - 2;
+                    simulatedCount = Math.max(5, Math.min(100, simulatedCount));
+                    onlineCount.textContent = simulatedCount;
+                }, 10000);
+                
+                return;
+            }
+            
+            try {
+                // Listen for new messages
+                const messagesRef = db.ref('chatroom/messages').orderByKey().limitToLast(50);
+                messagesRef.on('child_added', (snapshot) => {
+                    const message = snapshot.val();
+                    if (message) {
+                        addMessageToDOM(message);
+                    }
+                });
+                
+                // Listen for online users
+                const usersRef = db.ref('chatroom/users');
+                usersRef.on('value', (snapshot) => {
+                    const users = snapshot.val() || {};
+                    const now = Date.now();
+                    let activeUsers = 0;
+                    
+                    Object.values(users).forEach(user => {
+                        // Consider users active if they were seen in the last 30 seconds
+                        if (now - user.lastSeen < 30000) {
+                            activeUsers++;
+                        }
+                    });
+                    
+                    onlineCount.textContent = Math.max(1, activeUsers);
+                });
+                
+                // Clean up old messages (keep only last 100)
+                messagesRef.once('value', (snapshot) => {
+                    const messages = snapshot.val();
+                    if (messages) {
+                        const messageKeys = Object.keys(messages);
+                        if (messageKeys.length > 100) {
+                            const oldKeys = messageKeys.slice(0, messageKeys.length - 100);
+                            oldKeys.forEach(key => {
+                                db.ref(`chatroom/messages/${key}`).remove();
+                            });
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error listening for messages:", error);
+            }
+        }
+        
+        function checkCooldown() {
+            const now = Date.now();
+            const timeSinceLastMessage = now - lastMessageTime;
+            const remainingTime = COOLDOWN_TIME - timeSinceLastMessage;
+            
+            if (remainingTime > 0) {
+                sendButton.disabled = true;
+                const seconds = Math.ceil(remainingTime / 1000);
+                statusText.innerHTML = `<span class="cooldown">Cooldown: ${seconds}s</span>`;
+                
+                setTimeout(checkCooldown, 100);
+            } else {
+                sendButton.disabled = false;
+                if (isFirebaseConnected) {
+                    statusText.textContent = 'Connected - Ready to send';
+                } else {
+                    statusText.textContent = 'Demo mode - Ready to send';
+                }
+            }
+        }
+        
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !username) return;
+            
+            const now = Date.now();
+            if (now - lastMessageTime < COOLDOWN_TIME) return;
+            
+            const messageData = {
+                username: username,
+                text: text,
+                timestamp: now,
+                userId: userId
+            };
+            
+            sendMessageToFirebase(messageData);
+            
+            messageInput.value = '';
+            lastMessageTime = now;
+            checkCooldown();
+        }
+        
+        // Username input handling
+        usernameInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            if (value.length >= 3) {
+                username = value;
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                updateOnlineStatus();
+                if (isFirebaseConnected) {
+                    statusText.textContent = 'Connected - Ready to send';
+                } else {
+                    statusText.textContent = 'Demo mode - Ready to send';
+                }
+                messageInput.focus();
+            } else {
+                username = '';
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                statusText.textContent = 'Username must be at least 3 characters';
+            }
+        });
+        
+        // Message input handling
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Initialize chat
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add welcome message
+            addMessageToDOM({
+                username: 'SYSTEM',
+                text: 'Welcome to the chat zone! Enter your name and start chatting...',
+                timestamp: Date.now(),
+                id: 'welcome'
+            }, 'system');
+            
+            // Start listening for messages
+            listenForMessages();
+            
+            // Update online status every 15 seconds
+            setInterval(() => {
+                if (username) {
+                    updateOnlineStatus();
+                }
+            }, 15000);
+        });
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (isFirebaseConnected && username) {
+                db.ref(`chatroom/users/${userId}`).remove();
+            }
+        });
+    </script>
+</body>
+</html>
